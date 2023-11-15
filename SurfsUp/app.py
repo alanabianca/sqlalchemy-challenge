@@ -6,6 +6,7 @@ import datetime as dt
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, func
+from sqlalchemy import and_
 from flask import Flask, jsonify
 
 #################################################
@@ -22,7 +23,7 @@ Base.prepare(autoload_with=engine)
 # Save references to each table
 
 measurement = Base.classes.measurement
-station = Base.classes.station
+station_class = Base.classes.station
 
 # Create our session (link) from Python to the DB
 session = Session(engine)
@@ -47,7 +48,7 @@ def welcome():
         f"/api/v1.0/<start><br>"
         f"/api/v1.0/<end>"
     )
-
+#Precipitation Route - Works
 @app.route("/api/v1.0/precipitation")
 def precip():
     session=Session(engine)
@@ -67,11 +68,12 @@ def precip():
 
     return jsonify(all_results)
 
+#Stations Route - Works
 @app.route("/api/v1.0/stations")
 def stat():
     session=Session(engine)
   
-    stat_results = session.query(station.station, station.name).all()
+    stat_results = session.query(station_class.station, station_class.name).all()
     session.close()
    
     stat_list = []
@@ -81,13 +83,45 @@ def stat():
         stat_dict["name"]=name
         stat_list.append(stat_dict)
 
-    return jsonify(stat_results)
+    return jsonify(stat_list)
 
+#Tobs Route - BROKEN
+@app.route("/api/v1.0/tobs")
+def tobs():
+    session=Session(engine)
+   
+    prev_year = dt.date(2017, 8, 23) - dt.timedelta(days = 365)
+   
+    tobs_results = session.query(measurement.station, measurement.date, measurement.tobs).\
+        filter(measurement.date >= prev_year, measurement.station == "USC00519281").first()
+    session.close()
 
-#@app.route("/api/v1.0/tobs")
+    tobs_list = []
+    for date, tobs in tobs_results:
+        tobs_dict = {}
+        tobs_dict["date"]=date
+        tobs_dict["tobs"]=tobs
+        tobs_list.append(tobs_dict)
 
-#@app.route("/api/v1.0/<start>")
-#AND
+    return jsonify(tobs_list)
+
+#Dynamic Route - No where close. 
+@app.route("/api/v1.0/<start_date>")
+def start(start_date):
+    session=Session(engine)
+    start_results = session.query(measurement.station, measurement.date, func.avg(measurement.tobs)).\
+        filter(measurement.date >= start_date).all()
+    session.close()
+
+    start_list = []
+    for station, date in start_results:
+        start_dict = {}
+        start_dict["station"]=station
+        start_dict["date"]=date
+        start_dict["func.avg"]=func.avg
+        start_list.append(start_dict)
+    return jsonify(start_list)    
+
 #@app.route("/api/v1.0/<start>/<end>")
 
 if __name__ == "__main__":
