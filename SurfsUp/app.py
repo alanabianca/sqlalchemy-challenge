@@ -48,7 +48,7 @@ def welcome():
         f"/api/v1.0/<start><br>"
         f"/api/v1.0/<end>"
     )
-#Precipitation Route - Works
+#Precipitation Route
 @app.route("/api/v1.0/precipitation")
 def precip():
     session=Session(engine)
@@ -68,7 +68,7 @@ def precip():
 
     return jsonify(all_results)
 
-#Stations Route - Works
+#Stations Route
 @app.route("/api/v1.0/stations")
 def stat():
     session=Session(engine)
@@ -85,7 +85,7 @@ def stat():
 
     return jsonify(stat_list)
 
-#Tobs Route - BROKEN
+#Tobs Route
 @app.route("/api/v1.0/tobs")
 def tobs():
     session=Session(engine)
@@ -93,36 +93,51 @@ def tobs():
     prev_year = dt.date(2017, 8, 23) - dt.timedelta(days = 365)
    
     tobs_results = session.query(measurement.station, measurement.date, measurement.tobs).\
-        filter(measurement.date >= prev_year, measurement.station == "USC00519281").first()
+        filter(measurement.date >= prev_year, measurement.station == "USC00519281").all()
     session.close()
 
     tobs_list = []
-    for date, tobs in tobs_results:
+    for station, date, tobs in tobs_results:
         tobs_dict = {}
+        tobs_dict["station"]=station
         tobs_dict["date"]=date
         tobs_dict["tobs"]=tobs
         tobs_list.append(tobs_dict)
 
     return jsonify(tobs_list)
 
-#Dynamic Route - No where close. 
+#Dynamic Route 
 @app.route("/api/v1.0/<start_date>")
 def start(start_date):
     session=Session(engine)
-    start_results = session.query(measurement.station, measurement.date, func.avg(measurement.tobs)).\
+    start_results = session.query(measurement.station, measurement.date, func.avg(measurement.tobs).label('average)')).\
         filter(measurement.date >= start_date).all()
     session.close()
 
     start_list = []
-    for station, date in start_results:
+    for station, date, average in start_results:
         start_dict = {}
         start_dict["station"]=station
         start_dict["date"]=date
-        start_dict["func.avg"]=func.avg
+        start_dict["average"]=average
         start_list.append(start_dict)
     return jsonify(start_list)    
 
-#@app.route("/api/v1.0/<start>/<end>")
+@app.route("/api/v1.0/<start_date>/<end_date>")
+def start_end(start_date, end_date):
+    session=Session(engine)
+    start_results = session.query(measurement.station, measurement.date, func.avg(measurement.tobs).label('average')).\
+        filter(measurement.date >= start_date, measurement.date <= end_date).all()
+    session.close()
+
+    start_list = []
+    for station, date, average in start_results:
+        start_dict = {}
+        start_dict["station"]=station
+        start_dict["date"]=date
+        start_dict["average"]=average
+        start_list.append(start_dict)
+    return jsonify(start_list)    
 
 if __name__ == "__main__":
     app.run(debug=True)
