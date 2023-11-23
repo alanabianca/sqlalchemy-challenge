@@ -107,37 +107,42 @@ def tobs():
     return jsonify(tobs_list)
 
 #Dynamic Route 
+#@app.route("/api/v1.0/<start_date>")
+#def start(start_date):
+#    session=Session(engine)
+#    start_results = session.query(measurement.station, measurement.date, func.min(measurement.tobs).label("min"),\
+#                                  func.max(measurement.tobs).label("max"), func.avg(measurement.tobs).label('average)')).\
+#                                    filter(measurement.date >= start_date).all()
+#    session.close()
+
+#    start_list = []
+#    for station, date, min, max, average in start_results:
+#        start_dict = {}
+#        start_dict["station"]=station
+#        start_dict["date"]=date
+#        start_dict["min"]=min
+#        start_dict["max"]=max
+#        start_dict["average"]=average
+#        start_list.append(start_dict)
+#    return jsonify(start_list)    
+
 @app.route("/api/v1.0/<start_date>")
-def start(start_date):
+def start_end(start_date):
     session=Session(engine)
-    start_results = session.query(measurement.station, measurement.date, func.avg(measurement.tobs).label('average)')).\
-        filter(measurement.date >= start_date).all()
+    start_end_results = session.query(measurement.date, measurement.tobs, func.min(measurement.tobs).label("min"),\
+                                       func.max(measurement.tobs).label("max"), func.avg(measurement.tobs).label('average')).\
+                                        filter(measurement.date >= start_date)
     session.close()
 
-    start_list = []
-    for station, date, average in start_results:
-        start_dict = {}
-        start_dict["station"]=station
-        start_dict["date"]=date
-        start_dict["average"]=average
-        start_list.append(start_dict)
-    return jsonify(start_list)    
-
-@app.route("/api/v1.0/<start_date>/<end_date>")
-def start_end(start_date, end_date):
-    session=Session(engine)
-    start_results = session.query(measurement.station, measurement.date, func.avg(measurement.tobs).label('average')).\
-        filter(measurement.date >= start_date, measurement.date <= end_date).all()
-    session.close()
-
-    start_list = []
-    for station, date, average in start_results:
-        start_dict = {}
-        start_dict["station"]=station
-        start_dict["date"]=date
-        start_dict["average"]=average
-        start_list.append(start_dict)
-    return jsonify(start_list)    
+    start_end_list = []
+    for date, tobs, min, max, average in start_end_results:
+        start_end_dict = {}
+        start_end_dict["date"]=start_date
+        start_end_dict["min"]=min
+        start_end_dict["max"]=max
+        start_end_dict["average"]=average
+        start_end_list.append(start_end_dict)
+    return jsonify(start_end_list)    
 
 if __name__ == "__main__":
     app.run(debug=True)
