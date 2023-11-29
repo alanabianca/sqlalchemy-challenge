@@ -67,3 +67,4 @@ This code is designed to create a local API that has the following routes:
     Returns a list of the minimum, average, and maximum temperatures for the range between the given start date and the end date
     
 *Code written by Alana Castellano
+*Assistance given by AskBCS Tutors for Dynamic routes API call
